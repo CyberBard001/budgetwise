@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import IncomeForm from "./components/IncomeForm";
 import BillsForm from "./components/BillsForm";
 import BudgetChart from "./components/BudgetChart";
@@ -11,6 +11,15 @@ const App = () => {
     return localStorage.getItem("theme") === "dark";
   });
 
+  // Step 1: Track active section and refs
+  const [activeSection, setActiveSection] = useState("income");
+  const sectionRefs = {
+    income: useRef(null),
+    bills: useRef(null),
+    chart: useRef(null),
+    summary: useRef(null),
+  };
+
   useEffect(() => {
     const root = window.document.documentElement;
     if (isDark) {
@@ -21,6 +30,30 @@ const App = () => {
       localStorage.setItem("theme", "light");
     }
   }, [isDark]);
+
+  // Step 2: IntersectionObserver for scrollspy
+  useEffect(() => {
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((entry) => entry.isIntersecting);
+        if (visible) {
+          setActiveSection(visible.target.id);
+        }
+      },
+      { threshold: 0.4 }
+    );
+
+    Object.values(sectionRefs).forEach((ref) => {
+      if (ref.current) observer.observe(ref.current);
+    });
+
+    return () => {
+      Object.values(sectionRefs).forEach((ref) => {
+        if (ref.current) observer.unobserve(ref.current);
+      });
+    };
+    // eslint-disable-next-line
+  }, []);
 
   const handleIncomeUpdate = (data) => setIncome(data);
   const handleBillsUpdate = (data) => setBills(data);
@@ -45,12 +78,21 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white p-4">
-      {/* Sticky Top Navbar */}
+      {/* Step 4: Sticky Top Navbar with ScrollSpy */}
       <header className="sticky top-0 z-50 bg-gray-200 dark:bg-gray-900 shadow p-3 flex gap-4 justify-center">
-        <a href="#income" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Income</a>
-        <a href="#bills" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Bills</a>
-        <a href="#chart" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Chart</a>
-        <a href="#summary" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Summary</a>
+        {["income", "bills", "chart", "summary"].map((section) => (
+          <a
+            key={section}
+            href={`#${section}`}
+            className={`text-sm hover:underline ${
+              activeSection === section
+                ? "font-bold text-blue-700 dark:text-yellow-400"
+                : "text-blue-600 dark:text-blue-400"
+            }`}
+          >
+            {section.charAt(0).toUpperCase() + section.slice(1)}
+          </a>
+        ))}
       </header>
 
       <div className="flex justify-end mb-4">
@@ -63,27 +105,38 @@ const App = () => {
       </div>
       <h1 className="text-2xl font-bold mb-6">BudgetWise MVP</h1>
 
-      <div id="income">
+      {/* Step 3: Section refs */}
+      <div id="income" ref={sectionRefs.income}>
         <IncomeForm onIncomeUpdate={handleIncomeUpdate} />
       </div>
-      <div id="bills">
+      <div id="bills" ref={sectionRefs.bills}>
         <BillsForm onBillsUpdate={handleBillsUpdate} />
       </div>
 
       {income && bills.length > 0 && (
         <>
-          <div id="chart">
+          <div id="chart" ref={sectionRefs.chart}>
             <BudgetChart
               totalIncome={Number(income.amount) * payPeriods}
               totalBills={totalBills}
             />
           </div>
-          <div id="summary" className="bg-white dark:bg-gray-800 shadow p-4 rounded text-black dark:text-white">
+          <div
+            id="summary"
+            ref={sectionRefs.summary}
+            className="bg-white dark:bg-gray-800 shadow p-4 rounded text-black dark:text-white"
+          >
             <h2 className="text-lg font-semibold mb-2">Summary</h2>
 
-            <p>Total Monthly Bills: <strong>£{totalBills.toFixed(2)}</strong></p>
-            <p>Pay Frequency: <strong>{income.frequency}</strong></p>
-            <p>Pay Per Period: <strong>£{Number(income.amount).toFixed(2)}</strong></p>
+            <p>
+              Total Monthly Bills: <strong>£{totalBills.toFixed(2)}</strong>
+            </p>
+            <p>
+              Pay Frequency: <strong>{income.frequency}</strong>
+            </p>
+            <p>
+              Pay Per Period: <strong>£{Number(income.amount).toFixed(2)}</strong>
+            </p>
 
             <p className="mt-2">
               You get paid <strong>{payPeriods}</strong> times per month.
@@ -95,8 +148,7 @@ const App = () => {
             </p>
 
             <p className="mt-2">
-              Recommended to set aside per pay:{" "}
-              <strong>£{perPaySetAside}</strong>
+              Recommended to set aside per pay: <strong>£{perPaySetAside}</strong>
             </p>
 
             {!canAffordSetAside && (
