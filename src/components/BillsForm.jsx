@@ -19,7 +19,8 @@ const BillsForm = ({ onBillsUpdate }) => {
   const [bills, setBills] = useState([]);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(""); // Make sure this is declared
+  const [category, setCategory] = useState("");
+  const [note, setNote] = useState(""); // Step 2: Add note state
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("bills")) || [];
@@ -36,6 +37,7 @@ const BillsForm = ({ onBillsUpdate }) => {
       name,
       amount: parseFloat(amount),
       category,
+      note, // Step 2: Add note to bill object
     };
 
     const updatedBills = [...bills, newBill];
@@ -45,7 +47,8 @@ const BillsForm = ({ onBillsUpdate }) => {
 
     setName("");
     setAmount("");
-    setCategory(""); // Reset
+    setCategory("");
+    setNote(""); // Step 2: Reset note
   };
 
   const handleDelete = (index) => {
@@ -86,6 +89,14 @@ const BillsForm = ({ onBillsUpdate }) => {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
+        {/* Step 1: Add textarea for notes */}
+        <textarea
+          placeholder="Add a note (optional)"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={2}
+          className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white resize"
+        />
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded dark:bg-blue-400 dark:text-black">
           Add Bill
         </button>
@@ -93,19 +104,27 @@ const BillsForm = ({ onBillsUpdate }) => {
 
       <ul>
         {bills.map((bill, index) => (
-          <li key={bill.id || index} className="mb-2 flex justify-between items-center">
-            <span>
-              {bill.name}: £{Number(bill.amount).toFixed(2)}
-              <span className="ml-2 text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-800">
-                {bill.category}
+          <li key={bill.id || index} className="mb-2 flex flex-col">
+            <div className="flex justify-between items-center">
+              <span>
+                {bill.name}: £{Number(bill.amount).toFixed(2)}
+                <span className="ml-2 text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-800">
+                  {bill.category}
+                </span>
               </span>
-            </span>
-            <button
-              onClick={() => handleDelete(index)}
-              className="text-red-500 hover:underline"
-            >
-              Delete
-            </button>
+              <button
+                onClick={() => handleDelete(index)}
+                className="text-red-500 hover:underline"
+              >
+                Delete
+              </button>
+            </div>
+            {/* Step 3: Display note if present */}
+            {bill.note && (
+              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 ml-2">
+                📝 {bill.note}
+              </div>
+            )}
           </li>
         ))}
       </ul>

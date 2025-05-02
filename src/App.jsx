@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import IncomeForm from "./components/IncomeForm";
+import MultipleIncomeForm from "./components/MultipleIncomeForm"; // <-- Use the new multi-income form
 import BillsForm from "./components/BillsForm";
 import BudgetChart from "./components/BudgetChart";
 import { exportToCSV } from "./utils/exportToCSV";
@@ -58,9 +58,50 @@ const App = () => {
   const handleIncomeUpdate = (data) => setIncome(data);
   const handleBillsUpdate = (data) => setBills(data);
 
-  const totalBills = bills.reduce((sum, bill) => sum + (parseFloat(bill.amount) || 0), 0);
+  // Multi-income: calculate total monthly income
+  let totalMonthlyIncome = 0;
+  if (Array.isArray(income)) {
+    totalMonthlyIncome = income.reduce((sum, src) => {
+      const freq =
+        src.frequency === "weekly"
+          ? 4
+          : src.frequency === "biweekly"
+          ? 2
+          : src.frequency === "monthly"
+          ? 1
+          : 0;
+      return sum + (Number(src.amount) * freq);
+    }, 0);
+  } else if (income && income.amount) {
+    // fallback for single income
+    totalMonthlyIncome =
+      (income.frequency === "weekly"
+        ? 4
+        : income.frequency === "biweekly"
+        ? 2
+        : income.frequency === "monthly"
+        ? 1
+        : 0) * Number(income.amount);
+  }
+
+  const totalBills = bills.reduce(
+    (sum, bill) => sum + (parseFloat(bill.amount) || 0),
+    0
+  );
   const payPeriods =
-    income?.frequency === "weekly"
+    Array.isArray(income) && income.length > 0
+      ? Math.max(
+          ...income.map((src) =>
+            src.frequency === "weekly"
+              ? 4
+              : src.frequency === "biweekly"
+              ? 2
+              : src.frequency === "monthly"
+              ? 1
+              : 0
+          )
+        )
+      : income?.frequency === "weekly"
       ? 4
       : income?.frequency === "biweekly"
       ? 2
@@ -72,9 +113,12 @@ const App = () => {
       ? (totalBills / payPeriods).toFixed(2)
       : "0.00";
 
-  const canAffordSetAside = income?.amount >= parseFloat(perPaySetAside);
-  const hasShortfall = income?.amount * payPeriods < totalBills;
-  const shortfallAmount = totalBills - income?.amount * payPeriods;
+  const canAffordSetAside =
+    Array.isArray(income) && income.length > 0
+      ? income.some((src) => Number(src.amount) >= parseFloat(perPaySetAside))
+      : income?.amount >= parseFloat(perPaySetAside);
+  const hasShortfall = totalMonthlyIncome < totalBills;
+  const shortfallAmount = totalBills - totalMonthlyIncome;
 
   // Group bills by category for summary
   const groupedByCategory = bills.reduce((acc, bill) => {
@@ -113,7 +157,8 @@ const App = () => {
 
       {/* Step 3: Section refs */}
       <div id="income" ref={sectionRefs.income}>
-        <IncomeForm onIncomeUpdate={handleIncomeUpdate} />
+        {/* <IncomeForm onIncomeUpdate={handleIncomeUpdate} /> */}
+        <MultipleIncomeForm onIncomeUpdate={handleIncomeUpdate} />
       </div>
       <div id="bills" ref={sectionRefs.bills}>
         <BillsForm onBillsUpdate={handleBillsUpdate} />
@@ -123,7 +168,7 @@ const App = () => {
         <>
           <div id="chart" ref={sectionRefs.chart}>
             <BudgetChart
-              totalIncome={Number(income.amount) * payPeriods}
+              totalIncome={totalMonthlyIncome}
               totalBills={totalBills}
             />
           </div>
@@ -138,21 +183,9 @@ const App = () => {
               Total Monthly Bills: <strong>£{totalBills.toFixed(2)}</strong>
             </p>
             <p>
-              Pay Frequency: <strong>{income.frequency}</strong>
-            </p>
-            <p>
-              Pay Per Period: <strong>£{Number(income.amount).toFixed(2)}</strong>
-            </p>
-
-            <p className="mt-2">
-              You get paid <strong>{payPeriods}</strong> times per month.
-            </p>
-
-            <p>
               Estimated Monthly Income:{" "}
-              <strong>£{(Number(income.amount) * payPeriods).toFixed(2)}</strong>
+              <strong>£{totalMonthlyIncome.toFixed(2)}</strong>
             </p>
-
             <p className="mt-2">
               Recommended to set aside per pay: <strong>£{perPaySetAside}</strong>
             </p>
@@ -169,8 +202,7 @@ const App = () => {
 
             {!canAffordSetAside && (
               <p className="text-orange-500 mt-2">
-                ⚠️ You only earn £{Number(income.amount).toFixed(2)} per pay. Setting aside £{perPaySetAside} isn't possible.
-                Save what you can afford.
+                ⚠️ At least one income source is less than the recommended set aside per pay (£{perPaySetAside}). Save what you can afford.
               </p>
             )}
 
@@ -186,14 +218,14 @@ const App = () => {
               Monthly Net Position:{" "}
               <strong
                 className={`transition-colors duration-300 ${
-                  Number(income.amount) * payPeriods - totalBills >= 0
+                  totalMonthlyIncome - totalBills >= 0
                     ? "text-green-600"
                     : "text-red-600"
                 }`}
               >
-                {Number(income.amount) * payPeriods - totalBills >= 0 ? "✅" : "⚠️"} £
-                {(Number(income.amount) * payPeriods - totalBills).toFixed(2)}
-                {Number(income.amount) * payPeriods - totalBills >= 0
+                {totalMonthlyIncome - totalBills >= 0 ? "✅" : "⚠️"} £
+                {(totalMonthlyIncome - totalBills).toFixed(2)}
+                {totalMonthlyIncome - totalBills >= 0
                   ? " Surplus"
                   : " Deficit"}
               </strong>
