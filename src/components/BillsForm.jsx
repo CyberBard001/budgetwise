@@ -19,8 +19,9 @@ const BillsForm = ({ onBillsUpdate }) => {
   const [bills, setBills] = useState([]);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [actualAmount, setActualAmount] = useState(""); // 1. Add state for actualAmount
+  const [actualAmount, setActualAmount] = useState("");
   const [category, setCategory] = useState("");
+  const [type, setType] = useState(""); // 🟨 Step 1: Add type state
   const [note, setNote] = useState("");
   const [dueDate, setDueDate] = useState("");
 
@@ -32,14 +33,15 @@ const BillsForm = ({ onBillsUpdate }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name || !amount || !category) return;
+    if (!name || !amount || !category || !type) return;
 
     const newBill = {
       id: Date.now(),
       name,
       amount: parseFloat(amount),
-      actualAmount: actualAmount ? parseFloat(actualAmount) : null, // 3. Store if provided
+      actualAmount: actualAmount ? parseFloat(actualAmount) : null,
       category,
+      type, // 🟩 Step 3: Add type to bill object
       note,
       dueDate,
     };
@@ -51,8 +53,9 @@ const BillsForm = ({ onBillsUpdate }) => {
 
     setName("");
     setAmount("");
-    setActualAmount(""); // 4. Reset after submit
+    setActualAmount("");
     setCategory("");
+    setType(""); // 🟩 Reset type after submit
     setNote("");
     setDueDate("");
   };
@@ -84,7 +87,6 @@ const BillsForm = ({ onBillsUpdate }) => {
           required
           className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white"
         />
-        {/* 2. Actual Amount input */}
         <input
           type="number"
           placeholder="Actual Amount (£) (optional)"
@@ -102,6 +104,17 @@ const BillsForm = ({ onBillsUpdate }) => {
           {categoryOptions.map((cat) => (
             <option key={cat} value={cat}>{cat}</option>
           ))}
+        </select>
+        {/* 🟦 Step 2: Type dropdown */}
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white"
+          required
+        >
+          <option value="">Select Type</option>
+          <option value="Essential">Essential</option>
+          <option value="Flexible">Flexible</option>
         </select>
         <textarea
           placeholder="Add a note (optional)"
@@ -129,6 +142,10 @@ const BillsForm = ({ onBillsUpdate }) => {
                 {bill.name}: £{Number(bill.amount).toFixed(2)}
                 <span className="ml-2 text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-800">
                   {bill.category}
+                </span>
+                {/* 🟪 Step 4: Show type */}
+                <span className="ml-2 text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                  {bill.type}
                 </span>
               </span>
               <button
