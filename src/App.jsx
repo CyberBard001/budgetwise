@@ -76,6 +76,12 @@ const App = () => {
   const hasShortfall = income?.amount * payPeriods < totalBills;
   const shortfallAmount = totalBills - income?.amount * payPeriods;
 
+  // Group bills by category for summary
+  const groupedByCategory = bills.reduce((acc, bill) => {
+    acc[bill.category] = acc[bill.category] + bill.amount || bill.amount;
+    return acc;
+  }, {});
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white p-4">
       {/* Step 4: Sticky Top Navbar with ScrollSpy */}
@@ -150,6 +156,16 @@ const App = () => {
             <p className="mt-2">
               Recommended to set aside per pay: <strong>£{perPaySetAside}</strong>
             </p>
+
+            {/* Category totals */}
+            <div className="mt-4">
+              <h3 className="font-semibold mb-1">Totals by Category:</h3>
+              {Object.entries(groupedByCategory).map(([category, total]) => (
+                <div key={category}>
+                  <strong>{category}:</strong> £{total.toFixed(2)}
+                </div>
+              ))}
+            </div>
 
             {!canAffordSetAside && (
               <p className="text-orange-500 mt-2">

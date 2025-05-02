@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from "react";
 
+const categoryOptions = [
+  "Housing",
+  "Utilities",
+  "Debt",
+  "Groceries",
+  "Transport",
+  "Healthcare",
+  "Childcare",
+  "Entertainment",
+  "Dining Out",
+  "Shopping",
+  "Subscriptions",
+  "Other",
+];
+
 const BillsForm = ({ onBillsUpdate }) => {
   const [bills, setBills] = useState([]);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [type, setType] = useState("essential");
+  const [category, setCategory] = useState(""); // Make sure this is declared
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("bills")) || [];
@@ -14,14 +29,23 @@ const BillsForm = ({ onBillsUpdate }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const newBill = { name, amount: parseFloat(amount), type };
+    if (!name || !amount || !category) return;
+
+    const newBill = {
+      id: Date.now(),
+      name,
+      amount: parseFloat(amount),
+      category,
+    };
+
     const updatedBills = [...bills, newBill];
     setBills(updatedBills);
     localStorage.setItem("bills", JSON.stringify(updatedBills));
     onBillsUpdate(updatedBills);
+
     setName("");
     setAmount("");
-    setType("essential");
+    setCategory(""); // Reset
   };
 
   const handleDelete = (index) => {
@@ -52,12 +76,15 @@ const BillsForm = ({ onBillsUpdate }) => {
           className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white"
         />
         <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
           className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white"
+          required
         >
-          <option value="essential">Essential</option>
-          <option value="flexible">Flexible</option>
+          <option value="">Select Category</option>
+          {categoryOptions.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
         </select>
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded dark:bg-blue-400 dark:text-black">
           Add Bill
@@ -66,17 +93,11 @@ const BillsForm = ({ onBillsUpdate }) => {
 
       <ul>
         {bills.map((bill, index) => (
-          <li key={index} className="mb-2 flex justify-between items-center">
+          <li key={bill.id || index} className="mb-2 flex justify-between items-center">
             <span>
-              {bill.name}: £{bill.amount.toFixed(2)}{" "}
-              <span
-                className={`ml-2 text-sm font-semibold px-2 py-1 rounded ${
-                  bill.type === "essential"
-                    ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
-                    : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200"
-                }`}
-              >
-                {bill.type}
+              {bill.name}: £{Number(bill.amount).toFixed(2)}
+              <span className="ml-2 text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-800">
+                {bill.category}
               </span>
             </span>
             <button
