@@ -10,6 +10,10 @@ const App = () => {
   const [isDark, setIsDark] = useState(() => {
     return localStorage.getItem("theme") === "dark";
   });
+  // Step 3.1: Cash on Hand state
+  const [cashOnHand, setCashOnHand] = useState(() => {
+    return parseFloat(localStorage.getItem("cashOnHand")) || "";
+  });
 
   // Step 1: Track active section and refs
   const [activeSection, setActiveSection] = useState("income");
@@ -120,11 +124,26 @@ const App = () => {
   const hasShortfall = totalMonthlyIncome < totalBills;
   const shortfallAmount = totalBills - totalMonthlyIncome;
 
-  // Group bills by category for summary
-  const groupedByCategory = bills.reduce((acc, bill) => {
-    acc[bill.category] = acc[bill.category] + bill.amount || bill.amount;
-    return acc;
-  }, {});
+  // Group both planned and actual totals by category
+  const groupedByCategory = {};
+  bills.forEach((bill) => {
+    if (!groupedByCategory[bill.category]) {
+      groupedByCategory[bill.category] = { planned: 0, actual: 0 };
+    }
+    groupedByCategory[bill.category].planned += bill.amount;
+    groupedByCategory[bill.category].actual += bill.actualAmount ?? bill.amount;
+  });
+
+  // Step 3.2: Find next bill and show warning if needed
+  const today = new Date();
+  const sortedUpcomingBills = bills
+    .filter((b) => b.dueDate)
+    .map((b) => ({ ...b, parsedDate: new Date(b.dueDate) }))
+    .filter((b) => b.parsedDate >= today)
+    .sort((a, b) => a.parsedDate - b.parsedDate);
+
+  const nextBill = sortedUpcomingBills[0];
+  const needsWarning = nextBill && parseFloat(cashOnHand) < nextBill.amount;
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white p-4">
@@ -152,6 +171,21 @@ const App = () => {
         >
           {isDark ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
+      </div>
+      {/* Step 3.1: Cash on Hand input */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-1">Cash on Hand (£) (optional):</label>
+        <input
+          type="number"
+          value={cashOnHand}
+          onChange={(e) => {
+            const val = e.target.value;
+            setCashOnHand(val);
+            localStorage.setItem("cashOnHand", val);
+          }}
+          className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-white"
+          placeholder="e.g. 250"
+        />
       </div>
       <h1 className="text-2xl font-bold mb-6">BudgetWise MVP</h1>
 
@@ -190,15 +224,35 @@ const App = () => {
               Recommended to set aside per pay: <strong>£{perPaySetAside}</strong>
             </p>
 
-            {/* Category totals */}
+            {/* Enhanced Category totals with planned vs actual */}
             <div className="mt-4">
               <h3 className="font-semibold mb-1">Totals by Category:</h3>
-              {Object.entries(groupedByCategory).map(([category, total]) => (
-                <div key={category}>
-                  <strong>{category}:</strong> £{total.toFixed(2)}
-                </div>
-              ))}
+              {Object.entries(groupedByCategory).map(([category, totals]) => {
+                const difference = totals.actual - totals.planned;
+                const isOverspent = difference > 0;
+                return (
+                  <div key={category}>
+                    <strong>{category}:</strong>{" "}
+                    £{totals.planned.toFixed(2)} planned /
+                    £{totals.actual.toFixed(2)} actual
+                    {difference !== 0 && (
+                      <span className={`ml-2 ${isOverspent ? "text-red-600" : "text-green-600"}`}>
+                        {isOverspent
+                          ? `Overspent by £${difference.toFixed(2)}`
+                          : `Saved £${Math.abs(difference).toFixed(2)}`}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+
+            {/* Step 3.3: Show cash on hand warning */}
+            {needsWarning && (
+              <p className="text-red-500 mt-2">
+                ⚠️ Warning: You may not have enough cash (£{cashOnHand}) to cover <strong>{nextBill.name}</strong> due on <strong>{new Date(nextBill.dueDate).toLocaleDateString()}</strong>.
+              </p>
+            )}
 
             {!canAffordSetAside && (
               <p className="text-orange-500 mt-2">
@@ -229,6 +283,14 @@ const App = () => {
                   ? " Surplus"
                   : " Deficit"}
               </strong>
+            </p>
+
+            {/* Optional: Show overall actual spend */}
+            <p className="mt-2">
+              <strong>Total Actual Spend:</strong> £
+              {bills.reduce((sum, bill) => {
+                return sum + (bill.actualAmount ?? bill.amount);
+              }, 0).toFixed(2)}
             </p>
 
             <button

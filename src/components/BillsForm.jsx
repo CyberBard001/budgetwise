@@ -19,8 +19,10 @@ const BillsForm = ({ onBillsUpdate }) => {
   const [bills, setBills] = useState([]);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
+  const [actualAmount, setActualAmount] = useState(""); // 1. Add state for actualAmount
   const [category, setCategory] = useState("");
-  const [note, setNote] = useState(""); // Step 2: Add note state
+  const [note, setNote] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("bills")) || [];
@@ -36,8 +38,10 @@ const BillsForm = ({ onBillsUpdate }) => {
       id: Date.now(),
       name,
       amount: parseFloat(amount),
+      actualAmount: actualAmount ? parseFloat(actualAmount) : null, // 3. Store if provided
       category,
-      note, // Step 2: Add note to bill object
+      note,
+      dueDate,
     };
 
     const updatedBills = [...bills, newBill];
@@ -47,8 +51,10 @@ const BillsForm = ({ onBillsUpdate }) => {
 
     setName("");
     setAmount("");
+    setActualAmount(""); // 4. Reset after submit
     setCategory("");
-    setNote(""); // Step 2: Reset note
+    setNote("");
+    setDueDate("");
   };
 
   const handleDelete = (index) => {
@@ -78,6 +84,14 @@ const BillsForm = ({ onBillsUpdate }) => {
           required
           className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white"
         />
+        {/* 2. Actual Amount input */}
+        <input
+          type="number"
+          placeholder="Actual Amount (£) (optional)"
+          value={actualAmount}
+          onChange={(e) => setActualAmount(e.target.value)}
+          className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white"
+        />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -89,13 +103,18 @@ const BillsForm = ({ onBillsUpdate }) => {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
-        {/* Step 1: Add textarea for notes */}
         <textarea
           placeholder="Add a note (optional)"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={2}
           className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white resize"
+        />
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-700 text-black dark:text-white"
         />
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded dark:bg-blue-400 dark:text-black">
           Add Bill
@@ -119,10 +138,19 @@ const BillsForm = ({ onBillsUpdate }) => {
                 Delete
               </button>
             </div>
-            {/* Step 3: Display note if present */}
+            {bill.actualAmount != null && (
+              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 ml-2">
+                🧾 Actual Spent: £{bill.actualAmount.toFixed(2)}
+              </div>
+            )}
             {bill.note && (
               <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 ml-2">
                 📝 {bill.note}
+              </div>
+            )}
+            {bill.dueDate && (
+              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 ml-2">
+                📅 Due: {bill.dueDate}
               </div>
             )}
           </li>
