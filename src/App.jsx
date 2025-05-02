@@ -181,6 +181,24 @@ const App = () => {
               </p>
             )}
 
+            {/* Monthly Net Position */}
+            <p className="mt-4 flex items-center gap-2">
+              Monthly Net Position:{" "}
+              <strong
+                className={`transition-colors duration-300 ${
+                  Number(income.amount) * payPeriods - totalBills >= 0
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {Number(income.amount) * payPeriods - totalBills >= 0 ? "✅" : "⚠️"} £
+                {(Number(income.amount) * payPeriods - totalBills).toFixed(2)}
+                {Number(income.amount) * payPeriods - totalBills >= 0
+                  ? " Surplus"
+                  : " Deficit"}
+              </strong>
+            </p>
+
             <button
               onClick={() => exportToCSV(income, bills)}
               className="bg-green-600 text-white px-4 py-2 rounded mt-4"
