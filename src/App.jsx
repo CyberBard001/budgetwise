@@ -188,10 +188,12 @@ const App = () => {
           className="w-full bg-cover bg-center text-white py-12 px-4 mb-6 rounded"
           style={{ backgroundImage: "url('/Hero-bg.png')" }}
         >
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl font-bold drop-shadow-md">
-              BillWise by SG Learning
-            </h1>
+          <div className="max-w-6xl mx-auto">
+            <img
+              src="/Hero-bg.png"
+              alt="BillWise by SG Learning"
+              className="w-full object-contain"
+            />
           </div>
         </div>
 
