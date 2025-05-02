@@ -182,7 +182,20 @@ const App = () => {
             {isDark ? "☀️ Light Mode" : "🌙 Dark Mode"}
           </button>
         </div>
-        {/* Step 3.1: Cash on Hand input */}
+
+        {/* Hero Section with Logo and Title */}
+        <div
+          className="w-full bg-cover bg-center text-white py-12 px-4 mb-6 rounded"
+          style={{ backgroundImage: "url('/Hero-bg.png')" }}
+        >
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl font-bold drop-shadow-md">
+              BillWise by SG Learning
+            </h1>
+          </div>
+        </div>
+
+        {/* Cash on Hand input */}
         <div className="mb-6">
           <label className="block text-sm font-medium mb-1">Cash on Hand (£) (optional):</label>
           <input
@@ -197,7 +210,6 @@ const App = () => {
             placeholder="e.g. 250"
           />
         </div>
-        <h1 className="text-2xl font-bold mb-6">BudgetWise MVP</h1>
 
         {/* Step 3: Section refs */}
         <div id="income" ref={sectionRefs.income}>
