@@ -4,6 +4,8 @@ import BillsForm from "./components/BillsForm";
 import BudgetChart from "./components/BudgetChart";
 import { exportToCSV } from "./utils/exportToCSV";
 import Footer from "./components/Footer"; // Import Footer
+import { isDueSoon, clearBudgetData } from "./utils/budgetUtils"; // Import clearBudgetData
+import { getNextPayDate } from "./utils/dateUtils"; // Import helper
 
 const App = () => {
   const [income, setIncome] = useState(null);
@@ -89,10 +91,33 @@ const App = () => {
         : 0) * Number(income.amount);
   }
 
-  const totalBills = bills.reduce(
-    (sum, bill) => sum + (parseFloat(bill.amount) || 0),
-    0
-  );
+  // Normalize bill frequency to monthly
+  const convertToMonthly = (amount, freq) => {
+    switch (freq) {
+      case "weekly":
+        return amount * 4;
+      case "biweekly":
+        return amount * 2;
+      case "quarterly":
+        return amount / 3;
+      case "yearly":
+        return amount / 12;
+      default:
+        return amount;
+    }
+  };
+
+  // Use normalized monthly totals for planned and actual bills
+  const totalBills = bills.reduce((sum, bill) => {
+    const monthly = convertToMonthly(parseFloat(bill.amount) || 0, bill.frequency || "monthly");
+    return sum + monthly;
+  }, 0);
+
+  const totalActualBills = bills.reduce((sum, bill) => {
+    const actual = bill.actualAmount != null ? bill.actualAmount : bill.amount;
+    return sum + convertToMonthly(parseFloat(actual) || 0, bill.frequency || "monthly");
+  }, 0);
+
   const payPeriods =
     Array.isArray(income) && income.length > 0
       ? Math.max(
@@ -146,6 +171,45 @@ const App = () => {
   const nextBill = sortedUpcomingBills[0];
   const needsWarning = nextBill && parseFloat(cashOnHand) < nextBill.amount;
 
+  // Count bills due soon (within 7 days)
+  const dueSoonCount = bills.filter(b => isDueSoon(b.dueDate)).length;
+
+  // Build a map of upcoming income
+  const upcomingIncome = Array.isArray(income)
+    ? income
+        .map(src => {
+          const next = getNextPayDate(src, today);
+          return next
+            ? { ...src, nextPay: next }
+            : null;
+        })
+        .filter(Boolean)
+    : [];
+
+  // Augment each bill with a cash-warning flag
+  const billsWithWarnings = bills.map(bill => {
+    if (!bill.dueDate) return { ...bill, needsCashWarning: false };
+
+    const due = new Date(bill.dueDate);
+    const dueSoon = due - today <= 7 * 24 * 60 * 60 * 1000 && due >= today;
+
+    if (!dueSoon) return { ...bill, needsCashWarning: false };
+
+    // Cash available before this due date
+    const incomingBeforeDue = upcomingIncome
+      .filter(src => src.nextPay <= due)
+      .reduce((sum, src) => sum + Number(src.amount), 0);
+
+    const available = Number(cashOnHand || 0) + incomingBeforeDue;
+    const shortBy = bill.amount - available;
+
+    return {
+      ...bill,
+      needsCashWarning: shortBy > 0,
+      shortBy: shortBy.toFixed(2),
+    };
+  });
+
   return (
     <>
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white p-4">
@@ -174,27 +238,38 @@ const App = () => {
           </a>
         </header>
 
-        <div className="flex justify-end mb-4">
+        {/* Dual-button layout for dark mode and reset */}
+        <div className="flex justify-end gap-2 mb-4">
+          {/* Dark‑mode toggle */}
           <button
             onClick={() => setIsDark(!isDark)}
             className="bg-gray-800 text-white dark:bg-yellow-400 dark:text-black px-3 py-1 rounded"
           >
             {isDark ? "☀️ Light Mode" : "🌙 Dark Mode"}
           </button>
+
+          {/* Reset‑data button */}
+          <button
+            onClick={() => {
+              if (window.confirm("This will delete all saved income & bills. Continue?")) {
+                clearBudgetData();
+                window.location.reload(); // quick reset of state/UI
+              }
+            }}
+            className="bg-red-600 text-white px-3 py-1 rounded"
+            title="Clear all saved data"
+          >
+            🗑 Reset Data
+          </button>
         </div>
 
-        {/* Hero Section with Logo and Title */}
-        <div
-          className="w-full bg-cover bg-center text-white py-12 px-4 mb-6 rounded"
-          style={{ backgroundImage: "url('/Hero-bg.png')" }}
-        >
-          <div className="max-w-6xl mx-auto">
-            <img
-              src="/Hero-bg.png"
-              alt="BillWise by SG Learning"
-              className="w-full object-contain"
-            />
-          </div>
+        {/* Hero Section */}
+        <div className="w-full flex justify-center items-center py-8">
+          <img
+            src="/Hero-bg.png"
+            alt="BillWise hero"
+            className="w-full max-w-4xl object-contain"
+          />
         </div>
 
         {/* Cash on Hand input */}
@@ -219,7 +294,10 @@ const App = () => {
           <MultipleIncomeForm onIncomeUpdate={handleIncomeUpdate} />
         </div>
         <div id="bills" ref={sectionRefs.bills}>
-          <BillsForm onBillsUpdate={handleBillsUpdate} />
+          <BillsForm
+            onBillsUpdate={handleBillsUpdate}
+            billsWithWarnings={billsWithWarnings} // <-- Pass the prop here
+          />
         </div>
 
         {income && bills.length > 0 && (
@@ -278,6 +356,19 @@ const App = () => {
                 </p>
               )}
 
+              {dueSoonCount > 0 && (
+                <p className="mt-2 text-orange-600">
+                  🔔 {dueSoonCount} {dueSoonCount === 1 ? "bill is" : "bills are"} due within the next 7 days.
+                </p>
+              )}
+
+              {billsWithWarnings.some(b => b.needsCashWarning) && (
+                <p className="mt-2 text-red-600 font-semibold">
+                  ⚠️ One or more bills due in the next 7 days exceed your available cash.
+                  Consider topping‑up before they hit.
+                </p>
+              )}
+
               {!canAffordSetAside && (
                 <p className="text-orange-500 mt-2">
                   ⚠️ At least one income source is less than the recommended set aside per pay (£{perPaySetAside}). Save what you can afford.
@@ -312,9 +403,7 @@ const App = () => {
               {/* Optional: Show overall actual spend */}
               <p className="mt-2">
                 <strong>Total Actual Spend:</strong> £
-                {bills.reduce((sum, bill) => {
-                  return sum + (bill.actualAmount ?? bill.amount);
-                }, 0).toFixed(2)}
+                {totalActualBills.toFixed(2)}
               </p>
 
               <button
