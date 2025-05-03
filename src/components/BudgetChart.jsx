@@ -3,13 +3,17 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 
 const COLORS = ["#EF4444", "#10B981"];
 
-const BudgetChart = ({ totalIncome, totalBills }) => {
-  const remaining = totalIncome - totalBills;
+// 🎨 choose bar colour based on type & cash warning
+const getActualColour = (entry) => {
+  if (entry.type === "Essential") return "#16a34a";       // green-600
+  if (entry.type === "Flexible" && entry.needsCashWarning)
+    return "#dc2626";                                     // red-600
+  return "#d97706";                                       // amber-600 (normal flexible)
+};
 
-  const data = [
-    { name: "Bills", value: totalBills },
-    { name: "Remaining", value: remaining > 0 ? remaining : 0 },
-  ];
+const BudgetChart = ({ data = [] }) => {
+  // bail‑out until we actually have something to draw
+  if (!Array.isArray(data) || data.length === 0) return null;
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow p-4 rounded mb-6 text-black dark:text-white">
