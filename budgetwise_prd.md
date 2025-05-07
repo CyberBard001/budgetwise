@@ -1,7 +1,7 @@
 # Budgeting App - Product Requirements Document (PRD)
 
 ## Project Name
-**BudgetWise**
+**Quid Keeper**
 
 ## Objective
 To create a simple, accessible, and user-focused budgeting app that supports weekly, biweekly, and monthly pay frequencies. The app will help users plan for monthly bills and determine how much to set aside per paycheck, even when their income doesn’t align with bill cycles.

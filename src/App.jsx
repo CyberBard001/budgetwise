@@ -273,7 +273,7 @@ const App = () => {
 
   // 📚 Define the step list *inside* App (above return)
   const tutorialSteps = [                              // NEW
-    { title: "Welcome to BillWise!",
+    { title: "Welcome to Quid Keeper!",
       body: "This short tour will show you how to add income, bills and track your budget." },
     { title: "Cash on Hand",
       body: "Enter how much money you currently have available – warnings will use this." },
@@ -350,7 +350,7 @@ const App = () => {
           {/* Import JSON (triggers hidden input) */}
           <label
             className="bg-blue-600 text-white px-3 py-1 rounded cursor-pointer"
-            title="Import a BillWise JSON backup"
+            title="Import a Quid Keeper JSON backup"
           >
             ⬆ Import
             <input
@@ -391,7 +391,7 @@ const App = () => {
         <div className="w-full flex justify-center items-center py-8">
           <img
             src="/Hero-bg.png"
-            alt="BillWise hero"
+            alt="Quid Keeper hero"
             className="w-full max-w-4xl object-contain"
           />
         </div>

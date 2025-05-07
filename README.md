@@ -1,4 +1,4 @@
-# BudgetWise 
+# Quid Keeper 
  
 This is a simple budgeting app MVP focused on weekly, biweekly, and monthly pay frequencies. 
  
