@@ -13,6 +13,7 @@ import InfoButton from "./components/InfoButton"; // NEW
 import { exportToJSON, importFromJSON } from "./utils/jsonIO";  // NEW
 import { exportAllData, importAllData } from "./utils/exportImport";
 import CalendarView from "./components/CalendarView";    // NEW
+import PayeCalculator from "./components/PayeCalculator";            // ← NEW
 
 const App = () => {
   const [income, setIncome] = useState(null);
@@ -44,6 +45,7 @@ const App = () => {
   // Step 1: Track active section and refs
   const [activeSection, setActiveSection] = useState("income");
   const sectionRefs = {
+    paye: useRef(null),    // ← NEW
     income: useRef(null),
     bills: useRef(null),
     chart: useRef(null),
@@ -87,6 +89,11 @@ const App = () => {
 
   const handleIncomeUpdate = (data) => setIncome(data);
   const handleBillsUpdate = (data) => setBills(data);
+
+  // When the PAYE calc gives us a net figure, we'll auto-inject it as a single income source:
+  const handleNetIncome = (net) => {
+    setIncome([{ name: "Take-Home Pay", amount: net, frequency: "monthly", lastPaid: "" }]);
+  };
 
   // Multi-income: calculate total monthly income
   let totalMonthlyIncome = 0;
@@ -276,13 +283,15 @@ const App = () => {
   // 📚 Define the step list *inside* App (above return)
   const tutorialSteps = [                              // NEW
     { title: "Welcome to Quid Keeper!",
-      body: "This short tour will show you how to add income, bills and track your budget." },
+      body: "This short tour will show you how to add income, bills, calculate your take-home pay and track your budget." },
     { title: "Cash on Hand",
       body: "Enter how much money you currently have available – warnings will use this." },
     { title: "Income Section",
       body: "Add one or more income sources with frequency and last‑paid date." },
     { title: "Bills Section",
       body: "List your recurring bills, mark them Essential or Flexible, and set due dates." },
+    { title: "PAYE Calculator",
+      body: "Estimate your take-home pay per period (weekly, monthly, etc.) before adding it as income." },
     { title: "Summary & Charts",
       body: "See your net position, category totals and planned‑vs‑actual charts." },
   ];
@@ -409,7 +418,7 @@ const App = () => {
         <div className="mb-6">
           <label className="block text-sm font-medium mb-1">
             Cash on Hand (£) (optional):
-            <InfoButton onClick={() => jumpToStep(0)} />
+            <InfoButton onClick={() => jumpToStep(1)} />
           </label>
           <input
             type="number"
@@ -424,17 +433,25 @@ const App = () => {
           />
         </div>
 
+        {/* ── PAYE Calculator Section ── */}
+        <div id="paye" ref={sectionRefs.paye} className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">
+            PAYE Calculator <InfoButton onClick={() => jumpToStep(4)} />
+          </h2>
+          <PayeCalculator onNetIncome={handleNetIncome} />
+        </div>
+
         {/* Step 3: Section refs */}
         <div id="income" ref={sectionRefs.income}>
           <h2 className="text-xl font-semibold mb-4">
-            Income Sources <InfoButton onClick={() => jumpToStep(1)} />
+            Income Sources <InfoButton onClick={() => jumpToStep(2)} />
           </h2>
           {/* <IncomeForm onIncomeUpdate={handleIncomeUpdate} /> */}
           <MultipleIncomeForm onIncomeUpdate={handleIncomeUpdate} />
         </div>
         <div id="bills" ref={sectionRefs.bills}>
           <h2 className="text-xl font-semibold mb-4">
-            Monthly Bills <InfoButton onClick={() => jumpToStep(2)} />
+            Monthly Bills <InfoButton onClick={() => jumpToStep(3)} />
           </h2>
           <BillsForm
             onBillsUpdate={handleBillsUpdate}
