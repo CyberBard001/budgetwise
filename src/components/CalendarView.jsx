@@ -28,7 +28,7 @@ const CalendarView = ({ bills }) => {
       <h2 className="text-lg font-semibold mb-2">Bill Calendar</h2>
       <Calendar
         tileContent={tileContent}
-        calendarType="ISO 8601" /* Monday-first, ISO standard */
+        // calendarType="ISO 8601" /* Removed to use default */
       />
       <style jsx>{`
         .calendar-dot {
