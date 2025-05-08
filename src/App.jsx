@@ -11,6 +11,8 @@ import { getNextPayDate } from "./utils/dateUtils"; // Import helper
 import TutorialOverlay from "./components/TutorialOverlay";   // NEW
 import InfoButton from "./components/InfoButton"; // NEW
 import { exportToJSON, importFromJSON } from "./utils/jsonIO";  // NEW
+import { exportAllData, importAllData } from "./utils/exportImport";
+import CalendarView from "./components/CalendarView";    // NEW
 
 const App = () => {
   const [income, setIncome] = useState(null);
@@ -328,9 +330,8 @@ const App = () => {
         </header>
 
         {/* Action Buttons (row) */}
-        <div className="flex flex-wrap justify-end gap-2 mb-4">
-
-          {/* Dark‑mode */}
+        <div className="flex justify-end gap-2 mb-4">
+          {/* Dark-mode toggle */}
           <button
             onClick={() => setIsDark(!isDark)}
             className="bg-gray-800 text-white dark:bg-yellow-400 dark:text-black px-3 py-1 rounded"
@@ -340,39 +341,47 @@ const App = () => {
 
           {/* Export JSON */}
           <button
-            onClick={exportToJSON}
-            className="bg-green-600 text-white px-3 py-1 rounded"
-            title="Download budget data as JSON"
+            onClick={() => {
+              const dataStr = exportAllData();
+              const blob = new Blob([dataStr], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "quid-keeper-backup.json";
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="bg-blue-600 text-white px-3 py-1 rounded"
+            title="Download all data as JSON"
           >
-            ⬇ Export
+            📥 Export
           </button>
 
-          {/* Import JSON (triggers hidden input) */}
-          <label
-            className="bg-blue-600 text-white px-3 py-1 rounded cursor-pointer"
-            title="Import a Quid Keeper JSON backup"
-          >
-            ⬆ Import
-            <input
-              type="file"
-              accept="application/json"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+          {/* Import JSON */}
+          <button
+            onClick={() => {
+              const input = document.createElement("input");
+              input.type = "file";
+              input.accept = "application/json";
+              input.onchange = async (e) => {
                 try {
-                  await importFromJSON(file);
-                  alert("Data imported! Reloading…");
+                  const file = e.target.files[0];
+                  const txt = await file.text();
+                  importAllData(txt);
                   window.location.reload();
                 } catch (err) {
-                  alert("Import failed: " + err.message);
-                  console.error(err);
+                  alert("Failed to import: " + err.message);
                 }
-              }}
-            />
-          </label>
+              };
+              input.click();
+            }}
+            className="bg-indigo-600 text-white px-3 py-1 rounded"
+            title="Upload JSON backup"
+          >
+            📤 Import
+          </button>
 
-          {/* Reset‑data */}
+          {/* Reset-data button */}
           <button
             onClick={() => {
               if (window.confirm("This will delete all saved income & bills. Continue?")) {
@@ -383,7 +392,7 @@ const App = () => {
             className="bg-red-600 text-white px-3 py-1 rounded"
             title="Clear all saved data"
           >
-            🗑 Reset
+            🗑 Reset
           </button>
         </div>
 
@@ -432,7 +441,8 @@ const App = () => {
             billsWithWarnings={billsWithWarnings} // <-- Pass the prop here
           />
         </div>
-
+        {/* ── Bill Calendar View ── */}
+        <CalendarView bills={bills} />
         {income && bills.length > 0 && (
           <>
             <div id="chart" ref={sectionRefs.chart}>
