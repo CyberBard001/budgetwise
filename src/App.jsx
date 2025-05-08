@@ -290,6 +290,8 @@ const App = () => {
       body: "Add one or more income sources with frequency and last‑paid date." },
     { title: "Bills Section",
       body: "List your recurring bills, mark them Essential or Flexible, and set due dates." },
+    { title: "Bill Calendar & Timeline View",
+      body: "See all your bills on a month-grid, filter by frequency and spot upcoming payments at a glance." },
     { title: "PAYE Calculator",
       body: "Estimate your take-home pay per period (weekly, monthly, etc.) before adding it as income." },
     { title: "Summary & Charts",
@@ -458,8 +460,15 @@ const App = () => {
             billsWithWarnings={billsWithWarnings} // <-- Pass the prop here
           />
         </div>
+
         {/* ── Bill Calendar View ── */}
-        <CalendarView bills={bills} />
+        <div id="calendar" className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">
+            Bill Calendar <InfoButton onClick={() => jumpToStep(4)} />
+          </h2>
+          <CalendarView bills={bills} />
+        </div>
+
         {income && bills.length > 0 && (
           <>
             <div id="chart" ref={sectionRefs.chart}>
