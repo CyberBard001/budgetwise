@@ -14,6 +14,7 @@ import { exportToJSON, importFromJSON } from "./utils/jsonIO";  // NEW
 import { exportAllData, importAllData } from "./utils/exportImport";
 import CalendarView from "./components/CalendarView";    // NEW
 import PayeCalculator from "./components/PayeCalculator";            // ← NEW
+import BackToTop from "./components/BackToTop";
 
 const App = () => {
   const [income, setIncome] = useState(null);
@@ -316,28 +317,37 @@ const App = () => {
     <>
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white p-4">
         {/* Step 4: Sticky Top Navbar with ScrollSpy */}
-        <header className="sticky top-0 z-50 bg-gray-200 dark:bg-gray-900 shadow p-3 flex gap-4 justify-center">
-          {["income", "bills", "chart", "summary"].map((section) => (
-            <a
-              key={section}
-              href={`#${section}`}
-              className={`text-sm hover:underline ${
-                activeSection === section
-                  ? "font-bold text-blue-700 dark:text-yellow-400"
-                  : "text-blue-600 dark:text-blue-400"
-              }`}
-            >
-              {section.charAt(0).toUpperCase() + section.slice(1)}
+        <header className="sticky top-0 z-50 bg-gray-200 dark:bg-gray-900 shadow p-3 flex items-center justify-between px-4">
+          {/* logo + app name */}
+          <div className="flex items-center gap-2">
+            <img src="/sg-logo.png" alt="Quid Keeper logo" className="h-8 w-8" />
+            <span className="text-xl font-bold text-gray-800 dark:text-gray-100">
+              Quid Keeper
+            </span>
+          </div>
+          {/* navigation links */}
+          <nav className="flex gap-4">
+            {["income", "bills", "chart", "summary"].map((section) => (
+              <a
+                key={section}
+                href={`#${section}`}
+                className={`text-sm hover:underline ${
+                  activeSection === section
+                    ? "font-bold text-blue-700 dark:text-yellow-400"
+                    : "text-blue-600 dark:text-blue-400"
+                }`}
+              >
+                {section.charAt(0).toUpperCase() + section.slice(1)}
+              </a>
+            ))}
+            {/* New static routes */}
+            <a href="/resources" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+              Resources
             </a>
-          ))}
-
-          {/* New static routes */}
-          <a href="/resources" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            Resources
-          </a>
-          <a href="/savings" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            Savings
-          </a>
+            <a href="/savings" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+              Savings
+            </a>
+          </nav>
         </header>
 
         {/* Action Buttons (row) */}
@@ -407,14 +417,14 @@ const App = () => {
           </button>
         </div>
 
-        {/* Hero Section */}
-        <div className="w-full flex justify-center items-center py-8">
+        {/* Hero Section (full-bleed) */}
+        <section className="w-screen overflow-hidden">
           <img
             src="/Hero-bg.png"
             alt="Quid Keeper hero"
-            className="w-full max-w-4xl object-contain"
+            className="w-full h-auto object-cover"
           />
-        </div>
+        </section>
 
         {/* Cash on Hand input */}
         <div className="mb-6">
@@ -531,15 +541,14 @@ const App = () => {
 
               {/* Step 3.3: Show cash on hand warning */}
               {needsWarning && (
-                <p className="text-red-500 mt-2">
-                  ⚠️ Warning: You may not have enough cash (£{cashOnHand}) to cover <strong>{nextBill.name}</strong> due on <strong>{new Date(nextBill.dueDate).toLocaleDateString()}</strong>.
-                </p>
-              )}
-
-              {dueSoonCount > 0 && (
-                <p className="mt-2 text-orange-600">
-                  🔔 {dueSoonCount} {dueSoonCount === 1 ? "bill is" : "bills are"} due within the next 7 days.
-                </p>
+                <>
+                  {billsWithWarnings.some(b => b.needsCashWarning) && (
+                    <p className="mt-2 text-red-600 font-semibold">
+                      ⚠️ One or more bills due in the next 7 days exceed your available cash.
+                      Consider topping‑up before they hit.
+                    </p>
+                  )}
+                </>
               )}
 
               {billsWithWarnings.some(b => b.needsCashWarning) && (
@@ -606,6 +615,7 @@ const App = () => {
         />
       )}
       <Footer />
+      <BackToTop />
     </>
   );
 };
